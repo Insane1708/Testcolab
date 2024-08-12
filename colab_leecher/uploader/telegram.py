@@ -1,6 +1,3 @@
-# copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-
-
 import logging
 from PIL import Image
 from asyncio import sleep
@@ -28,7 +25,6 @@ async def progress_bar(current, total):
         engine="Pyrofork 💥",
     )
 
-
 async def upload_file(file_path, real_name):
     global Transfer, MSG
     BotTimes.task_start = datetime.now()
@@ -37,18 +33,24 @@ async def upload_file(file_path, real_name):
 
     f_type = type_ if BOT.Options.stream_upload else "document"
 
+    # Check if USER_STRING is provided
+    if hasattr(BOT, "USER_STRING") and BOT.USER_STRING:
+        user_client = BOT.USER_STRING  # Use the client initialized with USER_STRING
+        logging.info("Using USER_STRING for upload.")
+    else:
+        user_client = MSG.sent_msg  # Default to the normal upload
+        logging.info("Using normal upload.")
+
     # Upload the file
     try:
         if f_type == "video":
-            # For Renaming to mp4
             if not BOT.Options.stream_upload:
                 file_path = videoExtFix(file_path)
-            # Generate Thumbnail and Get Duration
             thmb_path, seconds = thumbMaintainer(file_path)
             with Image.open(thmb_path) as img:
                 width, height = img.size
 
-            MSG.sent_msg = await MSG.sent_msg.reply_video(
+            MSG.sent_msg = await user_client.reply_video(
                 video=file_path,
                 supports_streaming=True,
                 width=width,
@@ -57,17 +59,17 @@ async def upload_file(file_path, real_name):
                 thumb=thmb_path,
                 duration=int(seconds),
                 progress=progress_bar,
-                reply_to_message_id=MSG.sent_msg.id,
+                reply_to_message_id=MSG.sent_msg.id if not hasattr(BOT, "USER_STRING") else None,
             )
 
         elif f_type == "audio":
             thmb_path = None if not ospath.exists(Paths.THMB_PATH) else Paths.THMB_PATH
-            MSG.sent_msg = await MSG.sent_msg.reply_audio(
+            MSG.sent_msg = await user_client.reply_audio(
                 audio=file_path,
                 caption=caption,
                 thumb=thmb_path,  # type: ignore
                 progress=progress_bar,
-                reply_to_message_id=MSG.sent_msg.id,
+                reply_to_message_id=MSG.sent_msg.id if not hasattr(BOT, "USER_STRING") else None,
             )
 
         elif f_type == "document":
@@ -78,20 +80,20 @@ async def upload_file(file_path, real_name):
             else:
                 thmb_path = None
 
-            MSG.sent_msg = await MSG.sent_msg.reply_document(
+            MSG.sent_msg = await user_client.reply_document(
                 document=file_path,
                 caption=caption,
                 thumb=thmb_path,  # type: ignore
                 progress=progress_bar,
-                reply_to_message_id=MSG.sent_msg.id,
+                reply_to_message_id=MSG.sent_msg.id if not hasattr(BOT, "USER_STRING") else None,
             )
 
         elif f_type == "photo":
-            MSG.sent_msg = await MSG.sent_msg.reply_photo(
+            MSG.sent_msg = await user_client.reply_photo(
                 photo=file_path,
                 caption=caption,
                 progress=progress_bar,
-                reply_to_message_id=MSG.sent_msg.id,
+                reply_to_message_id=MSG.sent_msg.id if not hasattr(BOT, "USER_STRING") else None,
             )
 
         Transfer.sent_file.append(MSG.sent_msg)
